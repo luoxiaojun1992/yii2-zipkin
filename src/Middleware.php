@@ -30,6 +30,8 @@ trait Middleware
     public function init()
     {
         set_exception_handler(function (\Exception $exception) {
+            restore_exception_handler();
+
             $this->finishSpanTag();
 
             $this->span->tag(ERROR, $exception->getMessage() . PHP_EOL . $exception->getTraceAsString());
