@@ -227,9 +227,7 @@ class Tracer extends \yii\base\Component
      */
     public function formatHttpBody($httpBody, $bodySize = null)
     {
-        if (!is_string($httpBody)) {
-            return '';
-        }
+        $httpBody = $this->convertToStr($httpBody);
 
         if (is_null($bodySize)) {
             $bodySize = strlen($httpBody);
@@ -251,7 +249,24 @@ class Tracer extends \yii\base\Component
      */
     public function addTag($span, $key, $value)
     {
-        $span->tag($key, (string)$value);
+        $span->tag($key, $this->convertToStr($value));
+    }
+
+    /**
+     * Convert variable to string
+     *
+     * @param $value
+     * @return string
+     */
+    private function convertToStr($value)
+    {
+        if (!is_scalar($value)) {
+            $value = '';
+        } else {
+            $value = (string)$value;
+        }
+
+        return $value;
     }
 
     /**
