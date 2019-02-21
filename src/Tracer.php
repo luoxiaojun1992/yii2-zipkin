@@ -42,7 +42,7 @@ class Tracer extends \yii\base\Component
     public $serviceName = 'Yii2';
     public $endpointUrl = 'http://localhost:9411/api/v2/spans';
     public $sampleRate = 0;
-    public $bodySize = 1000;
+    public $bodySize = 5000;
 
     /** @var \Zipkin\Tracer */
     private $tracer;

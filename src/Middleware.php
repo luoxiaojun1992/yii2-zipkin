@@ -31,8 +31,6 @@ trait Middleware
      */
     public function init()
     {
-        set_exception_handler([$this, 'handleException']);
-
         \Yii::$app->response->on(Response::EVENT_AFTER_SEND, function (Event $event) {
             $this->afterSendResponse();
         });
@@ -88,6 +86,11 @@ trait Middleware
     {
         $yiiResponse = \Yii::$app->response;
         if ($yiiResponse) {
+            if ($yiiResponse->getIsServerError()) {
+                $this->tracer->addTag($this->span, ERROR, 'server error');
+            } elseif ($yiiResponse->getIsClientError()) {
+                $this->tracer->addTag($this->span, ERROR, 'client error');
+            }
             $this->tracer->addTag($this->span, HTTP_STATUS_CODE, $yiiResponse->getStatusCode());
             $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_BODY, $this->tracer->formatHttpBody($yiiResponse->content));
             $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_HEADERS, json_encode($yiiResponse->getHeaders()->toArray(), JSON_UNESCAPED_UNICODE));
@@ -122,42 +125,5 @@ trait Middleware
             }
             $this->finishSpan();
         }
-    }
-
-    /**
-     * Exception can be handled exactly once
-     *
-     * @param \Exception $exception
-     */
-    public function handleException(\Exception $exception)
-    {
-        if ($this->span && $this->tracer) {
-            if ($this->span->getContext()->isSampled()) {
-                $this->tracer->addTag($this->span, ERROR, $exception->getMessage() . PHP_EOL . $exception->getTraceAsString());
-            }
-        }
-
-        \Yii::$app->getErrorHandler()->handleException($exception);
-    }
-
-    /**
-     * @param \yii\base\Action $action
-     * @param mixed $result
-     * @return mixed
-     */
-    public function afterAction($action, $result)
-    {
-        $result = parent::afterAction($action, $result);
-
-        if ($this->span->getContext()->isSampled()) {
-            $yiiResponse = \Yii::$app->response;
-            if ($yiiResponse->getIsServerError()) {
-                $this->tracer->addTag($this->span, ERROR, 'server error');
-            } elseif ($yiiResponse->getIsClientError()) {
-                $this->tracer->addTag($this->span, ERROR, 'client error');
-            }
-        }
-
-        return $result;
     }
 }
