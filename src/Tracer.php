@@ -37,10 +37,12 @@ class Tracer extends \yii\base\Component
     const DB_QUERY_TIMES = 'db.query.times';
     const DB_QUERY_TOTAL_DURATION = 'db.query.total.duration';
     const FRAMEWORK_VERSION = 'framework.version';
+    const HTTP_QUERY_STRING = 'http.query_string';
 
     public $serviceName = 'Yii2';
     public $endpointUrl = 'http://localhost:9411/api/v2/spans';
     public $sampleRate = 0;
+    public $bodySize = 1000;
 
     /** @var \Zipkin\Tracer */
     private $tracer;
@@ -136,12 +138,12 @@ class Tracer extends \yii\base\Component
             return call_user_func_array($callback, ['span' => $span]);
         } catch (\Exception $e) {
             if ($span->getContext()->isSampled()) {
-                $span->tag(ERROR, $e->getMessage() . PHP_EOL . $e->getTraceAsString());
+                $this->addTag($span, ERROR, $e->getMessage() . PHP_EOL . $e->getTraceAsString());
             }
             throw $e;
         } finally {
             if ($span->getContext()->isSampled()) {
-                $span->tag(static::RUNTIME_MEMORY, round((memory_get_usage() - $startMemory) / 1000000, 2) . 'MB');
+                $this->addTag($span, static::RUNTIME_MEMORY, round((memory_get_usage() - $startMemory) / 1000000, 2) . 'MB');
                 $this->afterSpanTags($span);
             }
 
@@ -214,6 +216,42 @@ class Tracer extends \yii\base\Component
         }
 
         return $httpPath;
+    }
+
+    /**
+     * Formatting http body
+     *
+     * @param $httpBody
+     * @param null $bodySize
+     * @return string
+     */
+    public function formatHttpBody($httpBody, $bodySize = null)
+    {
+        if (!is_string($httpBody)) {
+            return '';
+        }
+
+        if (is_null($bodySize)) {
+            $bodySize = strlen($httpBody);
+        }
+
+        if ($bodySize > $this->bodySize) {
+            $httpBody = mb_substr($httpBody, 0, $this->bodySize, 'utf8') . ' ...';
+        }
+
+        return $httpBody;
+    }
+
+    /**
+     * Add span tag
+     *
+     * @param Span $span
+     * @param $key
+     * @param $value
+     */
+    public function addTag($span, $key, $value)
+    {
+        $span->tag($key, (string)$value);
     }
 
     /**
@@ -333,7 +371,7 @@ class Tracer extends \yii\base\Component
         foreach ($startSystemLoad as $k => $v) {
             $startSystemLoad[$k] = round($v, 2);
         }
-        $span->tag(static::RUNTIME_START_SYSTEM_LOAD, implode(',', $startSystemLoad));
+        $this->addTag($span, static::RUNTIME_START_SYSTEM_LOAD, implode(',', $startSystemLoad));
     }
 
     /**
@@ -345,7 +383,7 @@ class Tracer extends \yii\base\Component
         foreach ($finishSystemLoad as $k => $v) {
             $finishSystemLoad[$k] = round($v, 2);
         }
-        $span->tag(static::RUNTIME_FINISH_SYSTEM_LOAD, implode(',', $finishSystemLoad));
+        $this->addTag($span, static::RUNTIME_FINISH_SYSTEM_LOAD, implode(',', $finishSystemLoad));
     }
 
     /**
@@ -353,8 +391,8 @@ class Tracer extends \yii\base\Component
      */
     public function beforeSpanTags($span)
     {
-        $span->tag(self::FRAMEWORK_VERSION, 'Yii2-' . \Yii::$app->getVersion());
-        $span->tag(self::RUNTIME_PHP_VERSION, PHP_VERSION);
+        $this->addTag($span, self::FRAMEWORK_VERSION, 'Yii2-' . \Yii::$app->getVersion());
+        $this->addTag($span, self::RUNTIME_PHP_VERSION, PHP_VERSION);
 
         $this->startSysLoadTag($span);
     }
