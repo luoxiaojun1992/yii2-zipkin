@@ -3,9 +3,8 @@
 namespace Lxj\Yii2\Zipkin;
 
 use Psr\Http\Message\RequestInterface;
-use Symfony\Bridge\PsrHttpMessage\Factory\DiactorosFactory;
-use Symfony\Component\HttpFoundation\Request;
 use yii\console\Application;
+use yii\web\Request;
 use Zipkin\Endpoint;
 use Zipkin\Propagation\DefaultSamplingFlags;
 use Zipkin\Propagation\RequestHeaders;
@@ -282,20 +281,19 @@ class Tracer extends \yii\base\Component
     }
 
     /**
-     * Extract trace context from http psr request
+     * Extract trace context from yii request
      *
-     * @param RequestInterface $request
+     * @param Request $request
      * @return TraceContext|DefaultSamplingFlags
      */
     public function extractRequestToContext($request)
     {
-        $extractor = $this->getTracing()->getPropagation()->getExtractor(new RequestHeaders());
+        $extractor = $this->getTracing()->getPropagation()->getExtractor(new YiiRequestHeaders());
         return $extractor($request);
     }
 
     /**
-     * @return TraceContext|DefaultSamplingFlags|null
-     * @throws \yii\base\InvalidConfigException
+     * @return DefaultSamplingFlags|TraceContext|null
      */
     public function getParentContext()
     {
@@ -304,24 +302,8 @@ class Tracer extends \yii\base\Component
             $parentContext = $this->rootContext;
         } else {
             if (!(\Yii::$app instanceof Application)) {
-                $yiiRequest = \Yii::$app->getRequest();
-
-                //Convert yii request to symfony request
-                $symfonyRequest = new Request(
-                    $yiiRequest->getQueryParams(),
-                    $yiiRequest->getBodyParams(),
-                    [],
-                    $yiiRequest->getCookies()->toArray(),
-                    $_FILES,
-                    $_SERVER,
-                    $yiiRequest->getRawBody()
-                );
-
-                //Convert symfony request to psr request
-                $psrRequest = (new DiactorosFactory())->createRequest($symfonyRequest);
-
-                //Extract trace context from http psr request
-                $parentContext = $this->extractRequestToContext($psrRequest);
+                //Extract trace context from yii request
+                $parentContext = $this->extractRequestToContext(\Yii::$app->getRequest());
             }
         }
 
