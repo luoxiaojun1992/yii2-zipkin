@@ -42,6 +42,7 @@ class Tracer extends \yii\base\Component
     public $endpointUrl = 'http://localhost:9411/api/v2/spans';
     public $sampleRate = 0;
     public $bodySize = 5000;
+    public $curlTimeout = 1;
 
     /** @var \Zipkin\Tracer */
     private $tracer;
@@ -70,7 +71,7 @@ class Tracer extends \yii\base\Component
     {
         $endpoint = Endpoint::createFromGlobals()->withServiceName($this->serviceName);
         $sampler = BinarySampler::createAsAlwaysSample();
-        $reporter = new Http(null, ['endpoint_url' => $this->endpointUrl]);
+        $reporter = new Http(null, ['endpoint_url' => $this->endpointUrl, 'timeout' => $this->curlTimeout]);
 
         $this->tracing = TracingBuilder::create()
             ->havingLocalEndpoint($endpoint)
