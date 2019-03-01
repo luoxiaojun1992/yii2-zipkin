@@ -43,6 +43,11 @@ class Tracer extends \yii\base\Component
     public $sampleRate = 0;
     public $bodySize = 5000;
     public $curlTimeout = 1;
+    public $redisOptions = [
+        'queue_name' => 'queue:zipkin:span',
+        'connection' => 'zipkinRedis',
+    ];
+    public $reportType = 'http';
 
     /** @var \Zipkin\Tracer */
     private $tracer;
@@ -71,14 +76,24 @@ class Tracer extends \yii\base\Component
     {
         $endpoint = Endpoint::createFromGlobals()->withServiceName($this->serviceName);
         $sampler = BinarySampler::createAsAlwaysSample();
-        $reporter = new Http(null, ['endpoint_url' => $this->endpointUrl, 'timeout' => $this->curlTimeout]);
 
         $this->tracing = TracingBuilder::create()
             ->havingLocalEndpoint($endpoint)
             ->havingSampler($sampler)
-            ->havingReporter($reporter)
+            ->havingReporter($this->getReporter())
             ->build();;
         $this->tracer = $this->getTracing()->getTracer();
+    }
+
+    private function getReporter()
+    {
+        if ($this->reportType === 'redis') {
+            return new RedisReporter($this->redisOptions);
+        } elseif ($this->reportType === 'http') {
+            return new Http(null, ['endpoint_url' => $this->endpointUrl, 'timeout' => $this->curlTimeout]);
+        }
+
+        return new Http(null, ['endpoint_url' => $this->endpointUrl, 'timeout' => $this->curlTimeout]);
     }
 
     /**
