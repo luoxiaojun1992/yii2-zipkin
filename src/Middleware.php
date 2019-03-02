@@ -68,7 +68,11 @@ trait Middleware
         $parentContext = $this->tracer->getParentContext();
 
         $this->span = $this->tracer->getSpan($parentContext);
-        $this->span->setName('Server recv:' . $this->tracer->formatHttpPath(\Yii::$app->request->getPathInfo()));
+        if (\Yii::$app->requestedRoute) {
+            $this->span->setName($this->tracer->formatHttpPath(\Yii::$app->requestedRoute));
+        } else {
+            $this->span->setName($this->tracer->formatHttpPath(\Yii::$app->request->getPathInfo()));
+        }
         $this->span->setKind(SERVER);
         $this->span->start();
         $this->tracer->rootContext = $this->span->getContext();
@@ -120,6 +124,7 @@ trait Middleware
     private function afterSendResponse()
     {
         if ($this->span && $this->tracer) {
+            $this->span->setName($this->tracer->formatHttpPath(\Yii::$app->requestedRoute));
             if ($this->span->getContext()->isSampled()) {
                 $this->finishSpanTag();
             }

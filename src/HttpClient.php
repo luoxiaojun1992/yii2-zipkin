@@ -21,57 +21,60 @@ class HttpClient extends GuzzleHttpClient
      *
      * @param RequestInterface $request
      * @param array $options
+     * @param string $spanName
      * @return mixed|\Psr\Http\Message\ResponseInterface|null
      * @throws \Exception
      */
-    public function send(RequestInterface $request, array $options = [])
+    public function send(RequestInterface $request, array $options = [], $spanName = null)
     {
         /** @var Tracer $yiiTracer */
         $yiiTracer = \Yii::$app->zipkin;
         $path = $request->getUri()->getPath();
 
-        return $yiiTracer->span('Call api:' . $path, function (Span $span) use ($request, $options, $yiiTracer, $path) {
-            //Inject trace context to api psr request
-            $yiiTracer->injectContextToRequest($span->getContext(), $request);
+        return $yiiTracer->span(
+            isset($spanName) ? $spanName : $yiiTracer->formatRoutePath($path),
+            function (Span $span) use ($request, $options, $yiiTracer, $path) {
+                //Inject trace context to api psr request
+                $yiiTracer->injectContextToRequest($span->getContext(), $request);
 
-            if ($span->getContext()->isSampled()) {
-                $yiiTracer->addTag($span, HTTP_HOST, $request->getUri()->getHost());
-                $yiiTracer->addTag($span, HTTP_PATH, $path);
-                $yiiTracer->addTag($span, Tracer::HTTP_QUERY_STRING, (string)$request->getUri()->getQuery());
-                $yiiTracer->addTag($span, HTTP_METHOD, $request->getMethod());
-                $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_BODY, $yiiTracer->formatHttpBody($request->getBody()->getContents(), $request->getBody()->getSize()));
-                $request->getBody()->seek(0);
-                $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_HEADERS, json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
-                $yiiTracer->addTag(
-                    $span,
-                    Tracer::HTTP_REQUEST_PROTOCOL_VERSION,
-                    $yiiTracer->formatHttpProtocolVersion($request->getProtocolVersion())
-                );
-                $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_SCHEME, $request->getUri()->getScheme());
-            }
+                if ($span->getContext()->isSampled()) {
+                    $yiiTracer->addTag($span, HTTP_HOST, $request->getUri()->getHost());
+                    $yiiTracer->addTag($span, HTTP_PATH, $path);
+                    $yiiTracer->addTag($span, Tracer::HTTP_QUERY_STRING, (string)$request->getUri()->getQuery());
+                    $yiiTracer->addTag($span, HTTP_METHOD, $request->getMethod());
+                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_BODY, $yiiTracer->formatHttpBody($request->getBody()->getContents(), $request->getBody()->getSize()));
+                    $request->getBody()->seek(0);
+                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_HEADERS, json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
+                    $yiiTracer->addTag(
+                        $span,
+                        Tracer::HTTP_REQUEST_PROTOCOL_VERSION,
+                        $yiiTracer->formatHttpProtocolVersion($request->getProtocolVersion())
+                    );
+                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_SCHEME, $request->getUri()->getScheme());
+                }
 
-            $response = null;
-            try {
-                $response = parent::send($request, $options);
-                return $response;
-            } catch (\Exception $e) {
-                \Yii::error('CURL ERROR ' . $e->getMessage(), 'zipkin');
-                throw new \Exception('CURL ERROR ' . $e->getMessage());
-            } finally {
-                if ($response) {
-                    if ($span->getContext()->isSampled()) {
-                        $yiiTracer->addTag($span, HTTP_STATUS_CODE, $response->getStatusCode());
-                        $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_BODY, $yiiTracer->formatHttpBody($response->getBody()->getContents(), $response->getBody()->getSize()));
-                        $response->getBody()->seek(0);
-                        $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_HEADERS, json_encode($response->getHeaders(), JSON_UNESCAPED_UNICODE));
-                        $yiiTracer->addTag(
-                            $span,
-                            Tracer::HTTP_RESPONSE_PROTOCOL_VERSION,
-                            $yiiTracer->formatHttpProtocolVersion($response->getProtocolVersion())
-                        );
+                $response = null;
+                try {
+                    $response = parent::send($request, $options);
+                    return $response;
+                } catch (\Exception $e) {
+                    \Yii::error('CURL ERROR ' . $e->getMessage(), 'zipkin');
+                    throw new \Exception('CURL ERROR ' . $e->getMessage());
+                } finally {
+                    if ($response) {
+                        if ($span->getContext()->isSampled()) {
+                            $yiiTracer->addTag($span, HTTP_STATUS_CODE, $response->getStatusCode());
+                            $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_BODY, $yiiTracer->formatHttpBody($response->getBody()->getContents(), $response->getBody()->getSize()));
+                            $response->getBody()->seek(0);
+                            $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_HEADERS, json_encode($response->getHeaders(), JSON_UNESCAPED_UNICODE));
+                            $yiiTracer->addTag(
+                                $span,
+                                Tracer::HTTP_RESPONSE_PROTOCOL_VERSION,
+                                $yiiTracer->formatHttpProtocolVersion($response->getProtocolVersion())
+                            );
+                        }
                     }
                 }
-            }
-        }, null, \Zipkin\Kind\CLIENT);
+            }, null, \Zipkin\Kind\CLIENT);
     }
 }

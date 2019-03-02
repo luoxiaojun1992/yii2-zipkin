@@ -255,6 +255,20 @@ class Tracer extends \yii\base\Component
     }
 
     /**
+     * Formatting http path
+     *
+     * @param $httpPath
+     * @return string|string[]|null
+     */
+    public function formatRoutePath($httpPath)
+    {
+        $httpPath = preg_replace('/\/\d+$/', '/{id}', $httpPath);
+        $httpPath = preg_replace('/\/\d+\//', '/{id}/', $httpPath);
+
+        return $httpPath;
+    }
+
+    /**
      * Add span tag
      *
      * @param Span $span
