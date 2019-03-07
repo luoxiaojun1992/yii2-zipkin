@@ -42,7 +42,9 @@ class HttpClient extends GuzzleHttpClient
                     $yiiTracer->addTag($span, HTTP_PATH, $path);
                     $yiiTracer->addTag($span, Tracer::HTTP_QUERY_STRING, (string)$request->getUri()->getQuery());
                     $yiiTracer->addTag($span, HTTP_METHOD, $request->getMethod());
-                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_BODY, $yiiTracer->formatHttpBody($request->getBody()->getContents(), $request->getBody()->getSize()));
+                    $httpRequestBodyLen = $request->getBody()->getSize();
+                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_BODY_SIZE, $httpRequestBodyLen);
+                    $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_BODY, $yiiTracer->formatHttpBody($request->getBody()->getContents(), $httpRequestBodyLen));
                     $request->getBody()->seek(0);
                     $yiiTracer->addTag($span, Tracer::HTTP_REQUEST_HEADERS, json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
                     $yiiTracer->addTag(
@@ -64,7 +66,9 @@ class HttpClient extends GuzzleHttpClient
                     if ($response) {
                         if ($span->getContext()->isSampled()) {
                             $yiiTracer->addTag($span, HTTP_STATUS_CODE, $response->getStatusCode());
-                            $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_BODY, $yiiTracer->formatHttpBody($response->getBody()->getContents(), $response->getBody()->getSize()));
+                            $httpResponseBodyLen = $response->getBody()->getSize();
+                            $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_BODY_SIZE, $httpResponseBodyLen);
+                            $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_BODY, $yiiTracer->formatHttpBody($response->getBody()->getContents(), $httpResponseBodyLen));
                             $response->getBody()->seek(0);
                             $yiiTracer->addTag($span, Tracer::HTTP_RESPONSE_HEADERS, json_encode($response->getHeaders(), JSON_UNESCAPED_UNICODE));
                             $yiiTracer->addTag(

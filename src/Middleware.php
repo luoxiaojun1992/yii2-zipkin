@@ -45,7 +45,13 @@ trait Middleware
             $this->tracer->addTag($this->span, HTTP_PATH, $this->tracer->formatHttpPath($yiiRequest->getPathInfo()));
             $this->tracer->addTag($this->span, Tracer::HTTP_QUERY_STRING, (string)$yiiRequest->getQueryString());
             $this->tracer->addTag($this->span, HTTP_METHOD, $yiiRequest->getMethod());
-            $this->tracer->addTag($this->span, Tracer::HTTP_REQUEST_BODY, $this->tracer->formatHttpBody($yiiRequest->getRawBody()));
+            $httpRequestBody = $this->tracer->convertToStr($yiiRequest->getRawBody());
+            $httpRequestBodyLen = strlen($httpRequestBody);
+            $this->tracer->addTag($this->span, Tracer::HTTP_REQUEST_BODY_SIZE, $httpRequestBodyLen);
+            $this->tracer->addTag($this->span, Tracer::HTTP_REQUEST_BODY, $this->tracer->formatHttpBody(
+                $httpRequestBody,
+                $httpRequestBodyLen
+            ));
             $this->tracer->addTag($this->span, Tracer::HTTP_REQUEST_HEADERS, json_encode($yiiRequest->getHeaders()->toArray(), JSON_UNESCAPED_UNICODE));
             $this->tracer->addTag(
                 $this->span,
@@ -96,7 +102,13 @@ trait Middleware
                 $this->tracer->addTag($this->span, ERROR, 'client error');
             }
             $this->tracer->addTag($this->span, HTTP_STATUS_CODE, $yiiResponse->getStatusCode());
-            $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_BODY, $this->tracer->formatHttpBody($yiiResponse->content));
+            $httpResponseBody = $this->tracer->convertToStr($yiiResponse->content);
+            $httpResponseBodyLen = strlen($httpResponseBody);
+            $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_BODY_SIZE, $httpResponseBodyLen);
+            $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_BODY, $this->tracer->formatHttpBody(
+                $httpResponseBody,
+                $httpResponseBodyLen
+            ));
             $this->tracer->addTag($this->span, Tracer::HTTP_RESPONSE_HEADERS, json_encode($yiiResponse->getHeaders()->toArray(), JSON_UNESCAPED_UNICODE));
             $this->tracer->addTag(
                 $this->span,
