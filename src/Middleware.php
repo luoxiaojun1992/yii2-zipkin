@@ -77,7 +77,11 @@ trait Middleware
         if (\Yii::$app->requestedRoute) {
             $this->span->setName($this->tracer->formatHttpPath(\Yii::$app->requestedRoute));
         } else {
-            $this->span->setName($this->tracer->formatHttpPath(\Yii::$app->request->getPathInfo()));
+            $this->span->setName(
+                $this->tracer->formatRoutePath(
+                    $this->tracer->formatHttpPath(\Yii::$app->request->getPathInfo())
+                )
+            );
         }
         $this->span->setKind(SERVER);
         $this->span->start();
