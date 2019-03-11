@@ -131,7 +131,6 @@ trait Middleware
     {
         $this->span->finish();
         $this->tracer->flushTracer();
-
     }
 
     /**
