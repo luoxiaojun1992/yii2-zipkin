@@ -395,6 +395,11 @@ class Tracer extends \yii\base\Component
      */
     private function startSysLoadTag($span)
     {
+        //Not supported in windows os
+        if (!function_exists('sys_getloadavg')) {
+            return;
+        }
+
         $startSystemLoad = sys_getloadavg();
         foreach ($startSystemLoad as $k => $v) {
             $startSystemLoad[$k] = round($v, 2);
@@ -407,6 +412,11 @@ class Tracer extends \yii\base\Component
      */
     private function finishSysLoadTag($span)
     {
+        //Not supported in windows os
+        if (!function_exists('sys_getloadavg')) {
+            return;
+        }
+
         $finishSystemLoad = sys_getloadavg();
         foreach ($finishSystemLoad as $k => $v) {
             $finishSystemLoad[$k] = round($v, 2);
