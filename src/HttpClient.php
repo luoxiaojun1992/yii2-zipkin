@@ -22,10 +22,11 @@ class HttpClient extends GuzzleHttpClient
      * @param RequestInterface $request
      * @param array $options
      * @param string $spanName
+     * @param bool $injectSpanCtx
      * @return mixed|\Psr\Http\Message\ResponseInterface|null
      * @throws \Exception
      */
-    public function send(RequestInterface $request, array $options = [], $spanName = null)
+    public function send(RequestInterface $request, array $options = [], $spanName = null, $injectSpanCtx = true)
     {
         /** @var Tracer $yiiTracer */
         $yiiTracer = \Yii::$app->zipkin;
@@ -33,9 +34,11 @@ class HttpClient extends GuzzleHttpClient
 
         return $yiiTracer->span(
             isset($spanName) ? $spanName : $yiiTracer->formatRoutePath($path),
-            function (Span $span) use ($request, $options, $yiiTracer, $path) {
+            function (Span $span) use ($request, $options, $yiiTracer, $path, $injectSpanCtx) {
                 //Inject trace context to api psr request
-                $yiiTracer->injectContextToRequest($span->getContext(), $request);
+                if ($injectSpanCtx) {
+                    $yiiTracer->injectContextToRequest($span->getContext(), $request);
+                }
 
                 if ($span->getContext()->isSampled()) {
                     $yiiTracer->addTag($span, HTTP_HOST, $request->getUri()->getHost());
