@@ -31,6 +31,12 @@ trait Middleware
      */
     public function init()
     {
+        $pathInfo = \Yii::$app->zipkin->formatHttpPath(\Yii::$app->request->getPathInfo());
+        if (stripos($pathInfo, \Yii::$app->zipkin->apiPrefix) !== 0) {
+            parent::init();
+            return;
+        }
+
         \Yii::$app->response->on(Response::EVENT_AFTER_SEND, function (Event $event) {
             $this->afterSendResponse();
         });

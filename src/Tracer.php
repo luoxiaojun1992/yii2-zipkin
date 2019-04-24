@@ -50,6 +50,7 @@ class Tracer extends \yii\base\Component
         'connection' => 'zipkinRedis',
     ];
     public $reportType = 'http';
+    public $apiPrefix = '/';
 
     /** @var \Zipkin\Tracer */
     private $tracer;
