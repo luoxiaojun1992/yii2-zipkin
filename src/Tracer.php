@@ -205,15 +205,19 @@ class Tracer extends \yii\base\Component
     /**
      * Formatting http host
      *
-     * @param $httpHost
+     * @param $origHttpHost
      * @return string
      */
-    public function formatHttpHost($httpHost)
+    public function formatHttpHost($origHttpHost)
     {
-        $pathInfo = parse_url($httpHost);
-        $httpHost = $pathInfo['host'];
-        if (!empty($pathInfo['port'])) {
-            $httpHost .= ':' . $pathInfo['port'];
+        $pathInfo = parse_url($origHttpHost);
+        if (!empty($pathInfo['host'])) {
+            $httpHost = $pathInfo['host'];
+            if (!empty($pathInfo['port'])) {
+                $httpHost .= ':' . $pathInfo['port'];
+            }
+        } else {
+            $httpHost = $origHttpHost;
         }
 
         return $httpHost;
