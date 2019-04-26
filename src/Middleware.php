@@ -26,13 +26,25 @@ trait Middleware
     /** @var Span */
     private $span;
 
+    private function needSample()
+    {
+        $apiPrefix = explode(',', \Yii::$app->zipkin->apiPrefix);
+        $pathInfo = \Yii::$app->zipkin->formatHttpPath(\Yii::$app->request->getPathInfo());
+        foreach ($apiPrefix as $prefix) {
+            if (stripos($pathInfo, $prefix) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @throws \yii\base\InvalidConfigException
      */
     public function init()
     {
-        $pathInfo = \Yii::$app->zipkin->formatHttpPath(\Yii::$app->request->getPathInfo());
-        if (stripos($pathInfo, \Yii::$app->zipkin->apiPrefix) !== 0) {
+        if (!$this->needSample()) {
             parent::init();
             return;
         }
