@@ -47,13 +47,13 @@ class TracerTest extends \PHPUnit\Framework\TestCase
         $tracer = new \Lxj\Yii2\Zipkin\Tracer();
         $tracer->sampleRate = 1;
 
-        $this->assertTrue($tracer->rootSpan('unit-test', function (\Zipkin\Span $span) use ($tracer) {
-            $this->assertTrue($tracer->span('unit-test-sub', function (\Zipkin\Span $span) {
+        $this->assertTrue($tracer->serverSpan('unit-test', function (\Zipkin\Span $span) use ($tracer) {
+            $this->assertTrue($tracer->clientSpan('unit-test-sub', function (\Zipkin\Span $span) {
                 return true;
-            }, $span->getContext(), \Zipkin\Kind\CLIENT));
+            }));
 
             return true;
-        }, null, \Zipkin\Kind\SERVER, true));
+        }, true));
     }
 
     /**
@@ -79,12 +79,12 @@ class TracerTest extends \PHPUnit\Framework\TestCase
         $tracer = new \Lxj\Yii2\Zipkin\Tracer();
         $tracer->sampleRate = 1;
 
-        $this->assertTrue($tracer->rootSpan('unit-test', function (\Zipkin\Span $span) use ($tracer) {
-            $this->assertTrue($tracer->span('unit-test-sub', function (\Zipkin\Span $span) {
+        $this->assertTrue($tracer->serverSpan('unit-test', function (\Zipkin\Span $span) use ($tracer) {
+            $this->assertTrue($tracer->clientSpan('unit-test-sub', function (\Zipkin\Span $span) {
                 return true;
-            }, $span->getContext(), \Zipkin\Kind\CLIENT));
+            }));
 
             return true;
-        }, null, \Zipkin\Kind\SERVER, true));
+        }, true));
     }
 }

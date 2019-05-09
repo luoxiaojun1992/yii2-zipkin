@@ -32,7 +32,7 @@ class HttpClient extends GuzzleHttpClient
         $yiiTracer = \Yii::$app->zipkin;
         $path = $request->getUri()->getPath();
 
-        return $yiiTracer->span(
+        return $yiiTracer->clientSpan(
             isset($spanName) ? $spanName : $yiiTracer->formatRoutePath($path),
             function (Span $span) use ($request, $options, $yiiTracer, $path, $injectSpanCtx) {
                 //Inject trace context to api psr request
@@ -82,6 +82,6 @@ class HttpClient extends GuzzleHttpClient
                         }
                     }
                 }
-            }, null, \Zipkin\Kind\CLIENT);
+            });
     }
 }

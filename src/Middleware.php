@@ -103,7 +103,7 @@ trait Middleware
         }
         $this->span->setKind(SERVER);
         $this->span->start();
-        $this->tracer->rootContext = $this->span->getContext();
+        array_push($this->tracer->contextStack, $this->span->getContext());
 
         if ($this->span->getContext()->isSampled()) {
             $this->startMemory = memory_get_usage();
@@ -148,6 +148,7 @@ trait Middleware
     private function finishSpan()
     {
         $this->span->finish();
+        array_pop($this->tracer->contextStack);
         $this->tracer->flushTracer();
     }
 

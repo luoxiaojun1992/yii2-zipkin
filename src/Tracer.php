@@ -6,6 +6,8 @@ use Psr\Http\Message\RequestInterface;
 use yii\console\Application;
 use yii\web\Request;
 use Zipkin\Endpoint;
+use const Zipkin\Kind\CLIENT;
+use const Zipkin\Kind\SERVER;
 use Zipkin\Propagation\DefaultSamplingFlags;
 use Zipkin\Propagation\RequestHeaders;
 use Zipkin\Propagation\TraceContext;
@@ -59,8 +61,8 @@ class Tracer extends \yii\base\Component
     /** @var Tracing */
     private $tracing;
 
-    /** @var TraceContext */
-    public $rootContext;
+    /** @var array TraceContext[] */
+    public $contextStack = [];
 
     /**
      * Tracer constructor.
@@ -122,23 +124,46 @@ class Tracer extends \yii\base\Component
     }
 
     /**
-     * Create a trace
+     * Create a server trace
      *
-     * @param string $name
-     * @param callable $callback
-     * @param null|TraceContext|DefaultSamplingFlags $parentContext
-     * @param null|string $kind
-     * @param bool $isRoot
+     * @param $name
+     * @param $callback
      * @param bool $flush
      * @return mixed
      * @throws \Exception
      */
-    public function span($name, $callback, $parentContext = null, $kind = null, $isRoot = false, $flush = false)
+    public function serverSpan($name, $callback, $flush = false)
     {
-        if (!$parentContext) {
-            $parentContext = $this->getParentContext();
-        }
+        return $this->span($name, $callback, SERVER, $flush);
+    }
 
+    /**
+     * Create a client trace
+     *
+     * @param $name
+     * @param $callback
+     * @param bool $flush
+     * @return mixed
+     * @throws \Exception
+     */
+    public function clientSpan($name, $callback, $flush = false)
+    {
+        return $this->span($name, $callback, CLIENT, $flush);
+    }
+
+    /**
+     * Create a trace
+     *
+     * @param string $name
+     * @param callable $callback
+     * @param null|string $kind
+     * @param bool $flush
+     * @return mixed
+     * @throws \Exception
+     */
+    public function span($name, $callback, $kind = null, $flush = false)
+    {
+        $parentContext = $this->getParentContext();
         $span = $this->getSpan($parentContext);
         $span->setName($name);
         if ($kind) {
@@ -147,9 +172,8 @@ class Tracer extends \yii\base\Component
 
         $span->start();
 
-        if ($isRoot) {
-            $this->rootContext = $span->getContext();
-        }
+        $spanContext = $span->getContext();
+        array_push($this->contextStack, $spanContext);
 
         $startMemory = 0;
         if ($span->getContext()->isSampled()) {
@@ -171,27 +195,12 @@ class Tracer extends \yii\base\Component
             }
 
             $span->finish();
+            array_pop($this->contextStack);
 
             if ($flush) {
                 $this->flushTracer();
             }
         }
-    }
-
-    /**
-     * Create a root trace
-     *
-     * @param string $name
-     * @param callable $callback
-     * @param null|TraceContext|DefaultSamplingFlags $parentContext
-     * @param null|string $kind
-     * @param bool $flush
-     * @return mixed
-     * @throws \Exception
-     */
-    public function rootSpan($name, $callback, $parentContext = null, $kind = null, $flush = false)
-    {
-        return $this->span($name, $callback, $parentContext, $kind, true, $flush);
     }
 
     /**
@@ -340,8 +349,9 @@ class Tracer extends \yii\base\Component
     public function getParentContext()
     {
         $parentContext = null;
-        if ($this->rootContext) {
-            $parentContext = $this->rootContext;
+        $contextStackLen = count($this->contextStack);
+        if ($contextStackLen > 0) {
+            $parentContext = $this->contextStack[$contextStackLen - 1];
         } else {
             if (!(\Yii::$app instanceof Application)) {
                 //Extract trace context from yii request
