@@ -468,7 +468,9 @@ class Tracer extends \yii\base\Component
     public function flushTracer()
     {
         try {
-            $this->getTracer()->flush();
+            if ($tracer = $this->getTracer()) {
+                $tracer->flush();
+            }
         } catch (\Exception $e) {
             \Yii::error('Zipkin report error ' . $e->getMessage(), 'zipkin');
         }
