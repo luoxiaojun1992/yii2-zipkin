@@ -82,7 +82,7 @@ class Tracer extends \yii\base\Component
     {
         $endpoint = Endpoint::create(
             $this->serviceName,
-            array_key_exists('REMOTE_ADDR', $_SERVER) ? $_SERVER['REMOTE_ADDR'] : null,
+            \Yii::$app->request->getUserIp(),
             null,
             array_key_exists('REMOTE_PORT', $_SERVER) ? (int)$_SERVER['REMOTE_PORT'] : null
         );
