@@ -80,12 +80,16 @@ class Tracer extends \yii\base\Component
      */
     private function createTracer()
     {
-        $endpoint = Endpoint::create(
-            $this->serviceName,
-            \Yii::$app->request->getUserIp(),
-            null,
-            array_key_exists('REMOTE_PORT', $_SERVER) ? (int)$_SERVER['REMOTE_PORT'] : null
-        );
+        if (!$this->runningInConsole()) {
+            $endpoint = Endpoint::create(
+                $this->serviceName,
+                \Yii::$app->getRequest()->getUserIp(),
+                null,
+                array_key_exists('REMOTE_PORT', $_SERVER) ? (int)$_SERVER['REMOTE_PORT'] : null
+            );
+        } else {
+            $endpoint = Endpoint::create($this->serviceName);
+        }
         $sampler = BinarySampler::createAsAlwaysSample();
 
         $this->tracing = TracingBuilder::create()
@@ -353,7 +357,7 @@ class Tracer extends \yii\base\Component
         if ($contextStackLen > 0) {
             $parentContext = $this->contextStack[$contextStackLen - 1];
         } else {
-            if (!(\Yii::$app instanceof Application)) {
+            if (!$this->runningInConsole()) {
                 //Extract trace context from yii request
                 $parentContext = $this->extractRequestToContext(\Yii::$app->getRequest());
             }
@@ -479,5 +483,10 @@ class Tracer extends \yii\base\Component
     public function __destruct()
     {
         $this->flushTracer();
+    }
+
+    protected function runningInConsole()
+    {
+        return \Yii::$app instanceof Application;
     }
 }

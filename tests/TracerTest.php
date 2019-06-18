@@ -31,6 +31,8 @@ class TracerTest extends \PHPUnit\Framework\TestCase
         $request = M::mock('\\yii\\web\\Request');
         $request->shouldReceive('getHeaders')
             ->andReturn($headerCollection);
+        $request->shouldReceive('getUserIp')
+            ->andReturnNull();
 
         //Mock App
         $app = M::mock('\\yii\\web\\Application');
