@@ -4,6 +4,7 @@ namespace Lxj\Yii2\Zipkin;
 
 use GuzzleHttp\Client as GuzzleHttpClient;
 use Psr\Http\Message\RequestInterface;
+use yii\console\Application;
 use Zipkin\Span;
 use const Zipkin\Tags\HTTP_HOST;
 use const Zipkin\Tags\HTTP_METHOD;
@@ -23,18 +24,33 @@ class HttpClient extends GuzzleHttpClient
      * @param array $options
      * @param string $spanName
      * @param bool $injectSpanCtx
+     * @param bool $traceInConsole
      * @return mixed|\Psr\Http\Message\ResponseInterface|null
      * @throws \Exception
      */
-    public function send(RequestInterface $request, array $options = [], $spanName = null, $injectSpanCtx = true)
+    public function send(RequestInterface $request, array $options = [], $spanName = null, $injectSpanCtx = true, $traceInConsole = false)
     {
+        $sendRequest = function () use ($request, $options) {
+            try {
+                $response = parent::send($request, $options);
+                return $response;
+            } catch (\Exception $e) {
+                \Yii::error('CURL ERROR ' . $e->getMessage(), 'zipkin');
+                throw new \Exception('CURL ERROR ' . $e->getMessage());
+            }
+        };
+
+        if (\Yii::$app instanceof Application && !$traceInConsole) {
+            return call_user_func($sendRequest);
+        }
+
         /** @var Tracer $yiiTracer */
         $yiiTracer = \Yii::$app->zipkin;
         $path = $request->getUri()->getPath();
 
         return $yiiTracer->clientSpan(
             isset($spanName) ? $spanName : $yiiTracer->formatRoutePath($path),
-            function (Span $span) use ($request, $options, $yiiTracer, $path, $injectSpanCtx) {
+            function (Span $span) use ($request, $sendRequest, $yiiTracer, $path, $injectSpanCtx) {
                 //Inject trace context to api psr request
                 if ($injectSpanCtx) {
                     $yiiTracer->injectContextToRequest($span->getContext(), $request);
@@ -60,11 +76,10 @@ class HttpClient extends GuzzleHttpClient
 
                 $response = null;
                 try {
-                    $response = parent::send($request, $options);
+                    $response = call_user_func($sendRequest);
                     return $response;
                 } catch (\Exception $e) {
-                    \Yii::error('CURL ERROR ' . $e->getMessage(), 'zipkin');
-                    throw new \Exception('CURL ERROR ' . $e->getMessage());
+                    throw $e;
                 } finally {
                     if ($response) {
                         if ($span->getContext()->isSampled()) {
