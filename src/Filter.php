@@ -11,4 +11,10 @@ use yii\base\ActionFilter;
 class Filter extends ActionFilter
 {
     use Middleware;
+
+    public function init()
+    {
+        $this->trace();
+        parent::init();
+    }
 }

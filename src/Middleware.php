@@ -42,10 +42,9 @@ trait Middleware
     /**
      * @throws \yii\base\InvalidConfigException
      */
-    public function init()
+    public function trace()
     {
         if (!$this->needSample()) {
-            parent::init();
             return;
         }
 
@@ -78,8 +77,6 @@ trait Middleware
             );
             $this->tracer->addTag($this->span, Tracer::HTTP_REQUEST_SCHEME, $yiiRequest->getIsSecureConnection() ? 'https' : 'http');
         }
-
-        parent::init();
     }
 
     /**
