@@ -81,10 +81,12 @@ class Tracer extends \yii\base\Component
     private function createTracer()
     {
         if (!$this->runningInConsole()) {
+            $realIp = \Yii::$app->getRequest()->getUserIp();
+            $isIpV6 = substr_count($realIp, ':') > 1;
             $endpoint = Endpoint::create(
                 $this->serviceName,
-                \Yii::$app->getRequest()->getUserIp(),
-                null,
+                (!$isIpV6) ? $realIp : null,
+                $isIpV6 ? $realIp : null,
                 array_key_exists('REMOTE_PORT', $_SERVER) ? (int)$_SERVER['REMOTE_PORT'] : null
             );
         } else {
