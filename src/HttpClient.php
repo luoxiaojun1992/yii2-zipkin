@@ -38,7 +38,7 @@ class HttpClient extends GuzzleHttpClient
         $flushTracing = false
     )
     {
-        $sendRequest = function () use ($request, $options) {
+        $sendRequest = function () use (&$request, $options) {
             try {
                 $response = parent::send($request, $options);
                 return $response;
@@ -58,7 +58,7 @@ class HttpClient extends GuzzleHttpClient
 
         return $yiiTracer->clientSpan(
             isset($spanName) ? $spanName : $yiiTracer->formatRoutePath($path),
-            function (Span $span) use ($request, $sendRequest, $yiiTracer, $path, $injectSpanCtx) {
+            function (Span $span) use (&$request, $sendRequest, $yiiTracer, $path, $injectSpanCtx) {
                 //Inject trace context to api psr request
                 if ($injectSpanCtx) {
                     $yiiTracer->injectContextToRequest($span->getContext(), $request);
