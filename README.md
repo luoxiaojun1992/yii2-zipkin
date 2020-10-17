@@ -10,27 +10,28 @@ Zipkin in Yii2
       ```
       'zipkin' => [
          'class' => TracerAlias::class,
-         'serviceName' => 'basic',
-         'endpointUrl' => 'http://192.168.99.100:9411/api/v2/spans',
-         'sampleRate' => 2,
+         'serviceName' => 'yii2',
+         'endpointUrl' => 'http://127.0.0.1:9411/api/v2/spans',
+         'sampleRate' => 1,
          'apiPrefix' => '/'
      ],
      ```
-2. Config zipkin sample
+2. Add zipkin sampler
     * For single controller
-        add Lxj\Yii2\Zipkin\Filter to behaviors mathod.
         ```
+        //Add Lxj\Yii2\Zipkin\Filter to behaviors mathod.
         public function behaviors()
-            {
-                return [
-                    'zipkin' => [
-                        'class' => Filter::class,
-                    ],
-                ];
-            }
+        {
+            return [
+                'zipkin' => [
+                    'class' => Filter::class,
+                ],
+            ];
+        }
         ```
     * For module
-    ```
+        ```
+        //Define your module extended ```Lxj\Yii2\Zipkin\Module```
         class MyModule extends Lxj\Yii2\Zipkin\Module
-    ```
-Demo is [here](https://github.com/luoxiaojun1992/yii2-zipkin-demo).
+        ```
+3. Demo is [here](https://github.com/luoxiaojun1992/yii2-zipkin-demo).

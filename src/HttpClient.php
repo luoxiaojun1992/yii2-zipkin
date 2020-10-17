@@ -29,8 +29,8 @@ class HttpClient extends GuzzleHttpClient
      * @return mixed|\Psr\Http\Message\ResponseInterface|null
      * @throws \Exception
      */
-    public function send(
-        RequestInterface $request,
+    public function sendWithTrace(
+        RequestInterface &$request,
         array $options = [],
         $spanName = null,
         $injectSpanCtx = true,
