@@ -31,7 +31,7 @@ Zipkin in Yii2
         ```
     * For module
         ```
-        //Define your module extended ```Lxj\Yii2\Zipkin\Module```
+        //Define your module extended 'Lxj\Yii2\Zipkin\Module'
         class MyModule extends Lxj\Yii2\Zipkin\Module
         ```
 3. Demo is [here](https://github.com/luoxiaojun1992/yii2-zipkin-demo).
